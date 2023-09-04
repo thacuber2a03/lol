@@ -1,0 +1,270 @@
+#!/usr/bin/env lua
+
+---@param file file*
+---@param format string
+---@param ... any
+local function writeFile(file, format, ...)
+	file:write(string.format(format, ...))
+end
+
+---@param outputFile file*
+---@param nodeSpec table
+local function generateToString(outputFile, nodeSpec)
+	local function wf(format, ...)
+		writeFile(outputFile, "\t\t\t"..format.."\n", ...)
+	end
+
+	wf("local s = '%s('\n", nodeSpec.name)
+
+	local lastWasList
+	for name, type in pairs(nodeSpec.fields) do
+		lastWasList = type:match "%[%]"
+		if lastWasList then
+			wf "s = s .. '['"
+			wf("for i, v in ipairs(self.%s) do", name)
+			wf "\ts = s .. v"
+			wf("\tif i ~= #self.%s then s = s .. ', ' end", name)
+			wf "end"
+			wf "s = s .. '], '\n"
+		else
+			wf("s = s .. tostring(self.%s) .. ', '", name)
+		end
+	end
+
+	-- TODO(thacuber2a03): depends on a very specific combo of characters
+	-- having been the last characters to be output,
+	-- which is a horrible assumption to make
+	outputFile:seek("cur", lastWasList and -5 or -4)
+	outputFile:write "'\n\n"
+	wf "return s .. ')'"
+end
+
+---@param outputFile file*
+---@param nodeSpec table
+---@param subclass string
+local function defineDocs(outputFile, nodeSpec, subclass)
+	writeFile(outputFile, "---@class %s.%s : %s\n", subclass, nodeSpec.name, subclass)
+	for name, type in pairs(nodeSpec.fields) do
+		writeFile(outputFile, "---@field public %s %s\n", name, type)
+	end
+	outputFile:write "\n"
+end
+
+---@param outputFile file*
+---@param nodeSpec table
+local function defineFunc(outputFile, nodeSpec)
+	writeFile(outputFile, "function node.%s(", nodeSpec.name)
+	local s = ""
+	for name in pairs(nodeSpec.fields) do
+		s = s .. name .. ", "
+	end
+	outputFile:write(s:sub(1, -3))
+	outputFile:write ")\n"
+
+	outputFile:write "\treturn setmetatable({\n"
+	writeFile(outputFile, "\t\ttype = '%s',\n", nodeSpec.name)
+
+	for name in pairs(nodeSpec.fields) do
+		writeFile(outputFile, "\t\t%s = %s,\n", name, name)
+	end
+
+	outputFile:write "\t}, {\n"
+	outputFile:write "\t\t__tostring = function(self)\n"
+
+	generateToString(outputFile, nodeSpec)
+
+	outputFile:write "\t\tend,\n"
+	outputFile:write "\t})\nend\n\n"
+end
+
+local function defineNodes(spec)
+	local outputFile <close>, err = io.open("node.lua", "w+b")
+	if not outputFile then
+		print("couldn't open output file " .. err)
+		os.exit(-1)
+	end
+
+	outputFile:write "local node = {}\n\n"
+
+	outputFile:write "---@class Stmt\n\n"
+	outputFile:write "---@class Expr\n"
+
+	for _, nodeSpec in ipairs(spec.stmt) do
+		defineDocs(outputFile, nodeSpec, "Stmt")
+		defineFunc(outputFile, nodeSpec)
+	end
+
+	for _, nodeSpec in ipairs(spec.expr) do
+		defineDocs(outputFile, nodeSpec, "Expr")
+		defineFunc(outputFile, nodeSpec)
+	end
+
+	outputFile:write "return node"
+end
+
+defineNodes {
+	---------- expressions ----------
+	expr = {
+		{
+			name = "Assign",
+			fields = {
+				name  = "Token",
+				value = "Expr",
+			},
+		},
+		{
+			name = "Binary",
+			fields = {
+				left  = "Expr",
+				op    = "Token",
+				right = "Expr",
+			},
+		},
+		{
+			name = "Call",
+			fields = {
+				callee = "Expr",
+				paren = "Token",
+				arguments = "Expr[]",
+			},
+		},
+		{
+			name = "Get",
+			fields = {
+				object = "Expr",
+				name = "Token",
+			},
+		},
+		{
+			name = "Grouping",
+			fields = { expression = "Expr" },
+		},
+		{
+			name = "Literal",
+			fields = { value = "any" },
+		},
+		{
+			name = "Logical",
+			fields = {
+				left  = "Expr",
+				op    = "Token",
+				right = "Expr",
+			},
+		},
+		{
+			name = "Set",
+			fields = {
+				object = "Expr",
+				name = "Token",
+				value = "Expr",
+			},
+		},
+		{
+			name = "Super",
+			fields = {
+				keyword = "Token",
+				method = "Token",
+			},
+		},
+		{
+			name = "This",
+			fields = { keyword = "Token" },
+		},
+		{
+			name = "Unary",
+			fields = {
+				operator = "Token",
+				right = "Expr",
+			},
+		},
+		{
+			name = "Var",
+			fields = { name = "Token" },
+		},
+	},
+
+	---------- statements ----------
+	stmt = {
+		{
+			name = "Block",
+			fields = { statements = "Stmt[]" },
+		},
+		{
+			name = "Class",
+			fields = {
+				name = "Token",
+				superclass = "Expr.Variable",
+				methods = "Stmt.Function[]",
+			},
+		},
+		{
+			name = "Expression",
+			fields = { expression = "Expr" }
+		},
+		{
+			name = "Function",
+			fields = {
+				name = "Token",
+				params = "Token[]",
+				body = "Stmt[]",
+			},
+		},
+		{
+			name = "If",
+			fields = {
+				condition = "Expr",
+				thenBranch = "Stmt",
+				elseBranch = "Stmt",
+			},
+		},
+		{
+			name = "Print",
+			fields = { expression = "Token" },
+		},
+		{
+			name = "Return",
+			fields = {
+				keyword = "Token",
+				value = "Expr",
+			},
+		},
+		{
+			name = "Variable",
+			fields = {
+				name = "Token",
+				initializer = "Expr",
+			},
+		},
+		{
+			name = "While",
+			fields = {
+				condition = "Expr",
+				body = "Stmt",
+			}
+		}
+	}
+}
+
+--- cleanup ---
+
+local source
+
+do
+	local outputFile <close>, err = io.open("node.lua", "rb")
+	if not outputFile then
+		print("couldn't reopen output file: "..err)
+		os.exit(-1)
+	end
+	source = outputFile:read "a"
+end
+
+source = source:gsub(" .. ''", "")
+
+do
+	local outputFile <close>, err = io.open("node.lua", "w+b")
+	if not outputFile then
+		print("couldn't re-reopen output file: "..err)
+		os.exit(-1)
+	end
+	outputFile:write(source)
+end

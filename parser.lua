@@ -1,3 +1,5 @@
+local node = require 'node'
+
 local Parser = {}
 Parser.__index = Parser
 
@@ -10,6 +12,7 @@ function Parser.new(lexer)
 end
 
 function Parser:parse()
+	-- TODO(thacuber2a03): ...yeah
 end
 
 return setmetatable(Parser, {

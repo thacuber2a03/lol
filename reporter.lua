@@ -1,4 +1,4 @@
--- my first complex error reporter
+-- my first complex error reporter, damn
 -- it *is* boring string manipulation after all ^-^
 
 local reporter = {}

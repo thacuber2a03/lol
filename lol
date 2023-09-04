@@ -45,4 +45,6 @@ end
 
 local lexer = Lexer(source)
 local parser = Parser(lexer)
-print(parser:parse())
+for _, s in ipairs(parser:parse()) do
+	print(s)
+end

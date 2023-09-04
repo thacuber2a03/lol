@@ -38,18 +38,22 @@ local function unescape(s)
 		:gsub("\t", "\\t")
 end
 
+---@class Position
+---@field public line1 integer
+---@field public col1 integer
+---@field public line2 integer
+---@field public col2 integer
+
 ---@param type Token.Type
 ---@param value any
----@param line integer
----@param col integer
-function Token.new(type, value, line, col)
+---@param pos Position
+function Token.new(type, value, pos)
 	---@type Token
 	local self = setmetatable({}, Token)
 
 	self.type = type
 	self.value = value
-	self.line = line
-	self.col = col
+	self.pos = pos
 
 	return self
 end
@@ -58,8 +62,8 @@ function Token:__tostring()
 	local s = self.type
 	if self.type == Token.Type.ERROR then
 		local l1, c1, l2, c2 =
-			self.value.line1, self.value.col1,
-			self.value.line2, self.value.col2
+			self.pos.line1, self.pos.col1,
+			self.pos.line2, self.pos.col2
 
 		if l1 == l2 and c1 == c2 then
 			s = s .. string.format(" at (%i, %i)", l1, c1)

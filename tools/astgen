@@ -181,6 +181,10 @@ defineNodes {
 			name = "Var",
 			fields = { name = "Token" },
 		},
+		{
+			name = "Error",
+			fields = {}
+		}
 	},
 
 	---------- statements ----------

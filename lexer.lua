@@ -98,7 +98,15 @@ function Lexer:error(msg, printLine)
 		printLine
 	)
 
-	return Token(Type.ERROR, {
+	return self:makeToken(Type.ERROR)
+end
+
+---@param type Token.Type
+---@param value any
+---@return Token
+---@nodiscard
+function Lexer:makeToken(type, value)
+	return Token(type, value, {
 		line1=self.line1, col1=self.col1,
 		line2=self.line2, col2=self.col2,
 	})
@@ -119,10 +127,17 @@ function Lexer:string()
 
 	self:advance() -- '"'
 
-	return Token(Type.STRING, str)
+	return self:makeToken(Type.STRING, str)
 end
 
----@private -@return Token -@nodiscard function Lexer:number() local num = "" while self.curChar and self.curChar:match "%d" do num = num .. self:advance(true) end
+---@private
+---@return Token
+---@nodiscard
+function Lexer:number()
+	local num = ""
+	while self.curChar and self.curChar:match "%d" do
+		num = num .. self:advance(true)
+	end
 
 	local nextChar = self:peekChar()
 	if self.curChar == '.' and nextChar and nextChar:match "%d" then
@@ -132,7 +147,7 @@ end
 		end
 	end
 
-	return Token(Type.NUMBER, tonumber(num))
+	return self:makeToken(Type.NUMBER, tonumber(num))
 end
 
 ---@private
@@ -145,10 +160,9 @@ function Lexer:identifier()
 	end
 
 	local type = Type.IDENTIFIER
-	if KEYWORDS[id] then
-		type = KEYWORDS[id]
-	end
-	return Token(type, id)
+	if KEYWORDS[id] then type = KEYWORDS[id] end
+	if type ~= Type.IDENTIFIER then id = nil end
+	return self:makeToken(type, id)
 end
 
 ---@private
@@ -159,32 +173,32 @@ function Lexer:doNext()
 		self:advance()
 	end
 
-	if not self.curChar then return Token(Type.EOF) end
+	if not self.curChar then return self:makeToken(Type.EOF) end
 
-	if     self:match '(' then return Token(Type.LPAREN)
-	elseif self:match ')' then return Token(Type.RPAREN)
-	elseif self:match '{' then return Token(Type.LBRACE)
-	elseif self:match '}' then return Token(Type.RBRACE)
-	elseif self:match ',' then return Token(Type.COMMA)
-	elseif self:match '.' then return Token(Type.DOT)
-	elseif self:match '-' then return Token(Type.MINUS)
-	elseif self:match '+' then return Token(Type.PLUS)
-	elseif self:match '*' then return Token(Type.STAR)
-	elseif self:match ';' then return Token(Type.SEMICOLON)
+	if     self:match '(' then return self:makeToken(Type.LPAREN)
+	elseif self:match ')' then return self:makeToken(Type.RPAREN)
+	elseif self:match '{' then return self:makeToken(Type.LBRACE)
+	elseif self:match '}' then return self:makeToken(Type.RBRACE)
+	elseif self:match ',' then return self:makeToken(Type.COMMA)
+	elseif self:match '.' then return self:makeToken(Type.DOT)
+	elseif self:match '-' then return self:makeToken(Type.MINUS)
+	elseif self:match '+' then return self:makeToken(Type.PLUS)
+	elseif self:match '*' then return self:makeToken(Type.STAR)
+	elseif self:match ';' then return self:makeToken(Type.SEMICOLON)
 	end
 
 	if     self:match '!' then
-		if self:match '=' then return Token(Type.BANG_EQUAL)
-		else return Token(Type.BANG) end
+		if self:match '=' then return self:makeToken(Type.BANG_EQUAL)
+		else return self:makeToken(Type.BANG) end
 	elseif self:match '=' then
-		if self:match '=' then return Token(Type.EQUAL_EQUAL)
-		else return Token(Type.EQUAL) end
+		if self:match '=' then return self:makeToken(Type.EQUAL_EQUAL)
+		else return self:makeToken(Type.EQUAL) end
 	elseif self:match '>' then
-		if self:match '=' then return Token(Type.GREATER_EQUAL)
-		else return Token(Type.GREATER) end
+		if self:match '=' then return self:makeToken(Type.GREATER_EQUAL)
+		else return self:makeToken(Type.GREATER) end
 	elseif self:match '<' then
-		if self:match '=' then return Token(Type.LESS_EQUAL)
-		else return Token(Type.LESS) end
+		if self:match '=' then return self:makeToken(Type.LESS_EQUAL)
+		else return self:makeToken(Type.LESS) end
 
 	elseif self:match '/' then
 		if self:match '/' then
@@ -193,7 +207,7 @@ function Lexer:doNext()
 			end
 			return self:doNext()
 		else
-			return Token(Type.SLASH)
+			return self:makeToken(Type.SLASH)
 		end
 
 	elseif self:match '"' then

@@ -9,4 +9,4 @@ this time it converts Lox to Lua.
 
 ## usage
 
-same as [fe2lua](https://github.com/thacuber2a03/fe2lua).
+same as [lunas](https://github.com/thacuber2a03/lunas).

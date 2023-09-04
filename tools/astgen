@@ -24,7 +24,7 @@ local function generateToString(outputFile, nodeSpec)
 			if lastWasList then
 				wf "s = s .. '['"
 				wf("for i, v in ipairs(self.%s) do", name)
-				wf "\ts = s .. v"
+				wf "\ts = s .. tostring(v)"
 				wf("\tif i ~= #self.%s then s = s .. ', ' end", name)
 				wf "end"
 				wf "s = s .. '], '\n"
@@ -200,7 +200,7 @@ defineNodes {
 			name = "Class",
 			fields = {
 				name = "Token",
-				superclass = "Expr.Variable",
+				superclass = "Expr.Var",
 				methods = "Stmt.Function[]",
 			},
 		},

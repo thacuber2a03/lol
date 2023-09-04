@@ -1,1 +1,5 @@
+print 1;
+"aeiou";
 print true;
+print nil;
+false;

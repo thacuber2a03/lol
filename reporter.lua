@@ -18,6 +18,16 @@ function reporter:assertSource()
 	assert(self.source, "error reporter error (yeah): no source set")
 end
 
+local function split(str, sep)
+	sep = sep or "%s"
+
+	local t = {}
+	for m in str:gmatch("[^"..sep.."]*") do
+		table.insert(t, m)
+	end
+	return t
+end
+
 function reporter:error(msg, line1, col1, line2, col2, printLine)
 	if printLine == nil then printLine = true end
 	self.didError = true
@@ -30,7 +40,10 @@ function reporter:error(msg, line1, col1, line2, col2, printLine)
 	if printLine then
 		io.write "|\n"
 		local text = self:getTextBetweenLines(line1, line2)
-		io.write("|\t", text:gsub("\t", string.rep(" ", self.spacesPerTab)), "\n")
+		text = text:gsub("\t", string.rep(" ", self.spacesPerTab))
+		for _, l in ipairs(split(text, "\n")) do
+			io.write("|\t", l, "\n")
+		end
 		io.write("|\t", self:getErrLocationStr(text, line1, col1, line2, col2), "\n")
 	end
 
@@ -43,12 +56,7 @@ end
 function reporter:getTextBetweenLines(line1, line2)
 	self:assertSource()
 	line2 = line2 or line1
-
-	local lines = {}
-	for m in self.source:gmatch("[^\n]*") do
-		table.insert(lines, m)
-	end
-
+	local lines = split(self.source, "\n")
 	return table.concat(lines, "\n", line1, line2)
 end
 

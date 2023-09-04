@@ -16,26 +16,29 @@ local function generateToString(outputFile, nodeSpec)
 
 	wf("local s = '%s('\n", nodeSpec.name)
 
-	local lastWasList
-	for name, type in pairs(nodeSpec.fields) do
-		lastWasList = type:match "%[%]"
-		if lastWasList then
-			wf "s = s .. '['"
-			wf("for i, v in ipairs(self.%s) do", name)
-			wf "\ts = s .. v"
-			wf("\tif i ~= #self.%s then s = s .. ', ' end", name)
-			wf "end"
-			wf "s = s .. '], '\n"
-		else
-			wf("s = s .. tostring(self.%s) .. ', '", name)
-		end
-	end
+	if next(nodeSpec.fields) then
 
-	-- TODO(thacuber2a03): depends on a very specific combo of characters
-	-- having been the last characters to be output,
-	-- which is a horrible assumption to make
-	outputFile:seek("cur", lastWasList and -5 or -4)
-	outputFile:write "'\n\n"
+		local lastWasList
+		for name, type in pairs(nodeSpec.fields) do
+			lastWasList = type:match "%[%]"
+			if lastWasList then
+				wf "s = s .. '['"
+				wf("for i, v in ipairs(self.%s) do", name)
+				wf "\ts = s .. v"
+				wf("\tif i ~= #self.%s then s = s .. ', ' end", name)
+				wf "end"
+				wf "s = s .. '], '\n"
+			else
+				wf("s = s .. tostring(self.%s) .. ', '", name)
+			end
+		end
+
+		-- TODO(thacuber2a03): depends on a very specific combo of characters
+		-- having been the last characters to be output,
+		-- which is a horrible assumption to make
+		outputFile:seek("cur", lastWasList and -5 or -4)
+		outputFile:write "'\n\n"
+	end
 	wf "return s .. ')'"
 end
 

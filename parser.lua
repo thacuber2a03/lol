@@ -1,5 +1,3 @@
-local debugger = require 'debugger'
-
 local node = require 'node'
 local Type = require 'token'.Type
 local reporter = require 'reporter'
@@ -38,7 +36,6 @@ end
 ---Parses the source code.
 ---@return Stmt[]
 function Parser:parse()
-	--debugger()
 	local declarations = {}
 	while not self:isAtEnd() do
 		table.insert(declarations, self:declaration())
@@ -55,7 +52,13 @@ function Parser:statement()
 		return self:printStatement()
 	end
 
-	return self:error "unrecognized statement"
+	return self:expressionStatement()
+end
+
+function Parser:expressionStatement()
+	local expr = self:expression()
+	self:consume(Type.SEMICOLON, "expected ';' after expression")
+	return node.Expression(expr)
 end
 
 function Parser:printStatement()
@@ -72,7 +75,7 @@ function Parser:expression()
 	or self:check(Type.NIL) then
 		return node.Literal(self:next())
 	end
-	
+
 	return self:error("unrecognized expression")
 end
 

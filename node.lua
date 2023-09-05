@@ -16,7 +16,7 @@ function node.Block(statements)
 
 			s = s .. '['
 			for i, v in ipairs(self.statements) do
-				s = s .. v
+				s = s .. tostring(v)
 				if i ~= #self.statements then s = s .. ', ' end
 			end
 			s = s .. ']'
@@ -28,28 +28,28 @@ end
 
 ---@class Stmt.Class : Stmt
 ---@field public methods Stmt.Function[]
+---@field public superclass Expr.Var
 ---@field public name Token
----@field public superclass Expr.Variable
 
-function node.Class(methods, name, superclass)
+function node.Class(methods, superclass, name)
 	return setmetatable({
 		type = 'Class',
 		methods = methods,
-		name = name,
 		superclass = superclass,
+		name = name,
 	}, {
 		__tostring = function(self)
 			local s = 'Class('
 
 			s = s .. '['
 			for i, v in ipairs(self.methods) do
-				s = s .. v
+				s = s .. tostring(v)
 				if i ~= #self.methods then s = s .. ', ' end
 			end
 			s = s .. '], '
 
-			s = s .. tostring(self.name) .. ', '
-			s = s .. tostring(self.superclass)
+			s = s .. tostring(self.superclass) .. ', '
+			s = s .. tostring(self.name)
 
 			return s .. ')'
 		end,
@@ -76,33 +76,34 @@ end
 
 ---@class Stmt.Function : Stmt
 ---@field public body Stmt[]
----@field public name Token
 ---@field public params Token[]
+---@field public name Token
 
-function node.Function(body, name, params)
+function node.Function(body, params, name)
 	return setmetatable({
 		type = 'Function',
 		body = body,
-		name = name,
 		params = params,
+		name = name,
 	}, {
 		__tostring = function(self)
 			local s = 'Function('
 
 			s = s .. '['
 			for i, v in ipairs(self.body) do
-				s = s .. v
+				s = s .. tostring(v)
 				if i ~= #self.body then s = s .. ', ' end
 			end
 			s = s .. '], '
 
-			s = s .. tostring(self.name) .. ', '
 			s = s .. '['
 			for i, v in ipairs(self.params) do
-				s = s .. v
+				s = s .. tostring(v)
 				if i ~= #self.params then s = s .. ', ' end
 			end
-			s = s .. ']'
+			s = s .. '], '
+
+			s = s .. tostring(self.name)
 
 			return s .. ')'
 		end,
@@ -111,22 +112,22 @@ end
 
 ---@class Stmt.If : Stmt
 ---@field public condition Expr
----@field public thenBranch Stmt
 ---@field public elseBranch Stmt
+---@field public thenBranch Stmt
 
-function node.If(condition, thenBranch, elseBranch)
+function node.If(condition, elseBranch, thenBranch)
 	return setmetatable({
 		type = 'If',
 		condition = condition,
-		thenBranch = thenBranch,
 		elseBranch = elseBranch,
+		thenBranch = thenBranch,
 	}, {
 		__tostring = function(self)
 			local s = 'If('
 
 			s = s .. tostring(self.condition) .. ', '
-			s = s .. tostring(self.thenBranch) .. ', '
-			s = s .. tostring(self.elseBranch)
+			s = s .. tostring(self.elseBranch) .. ', '
+			s = s .. tostring(self.thenBranch)
 
 			return s .. ')'
 		end,
@@ -194,20 +195,20 @@ function node.Variable(initializer, name)
 end
 
 ---@class Stmt.While : Stmt
----@field public condition Expr
 ---@field public body Stmt
+---@field public condition Expr
 
-function node.While(condition, body)
+function node.While(body, condition)
 	return setmetatable({
 		type = 'While',
-		condition = condition,
 		body = body,
+		condition = condition,
 	}, {
 		__tostring = function(self)
 			local s = 'While('
 
-			s = s .. tostring(self.condition) .. ', '
-			s = s .. tostring(self.body)
+			s = s .. tostring(self.body) .. ', '
+			s = s .. tostring(self.condition)
 
 			return s .. ')'
 		end,
@@ -236,22 +237,22 @@ function node.Assign(value, name)
 end
 
 ---@class Expr.Binary : Expr
----@field public left Expr
 ---@field public op Token
+---@field public left Expr
 ---@field public right Expr
 
-function node.Binary(left, op, right)
+function node.Binary(op, left, right)
 	return setmetatable({
 		type = 'Binary',
-		left = left,
 		op = op,
+		left = left,
 		right = right,
 	}, {
 		__tostring = function(self)
 			local s = 'Binary('
 
-			s = s .. tostring(self.left) .. ', '
 			s = s .. tostring(self.op) .. ', '
+			s = s .. tostring(self.left) .. ', '
 			s = s .. tostring(self.right)
 
 			return s .. ')'
@@ -260,25 +261,25 @@ function node.Binary(left, op, right)
 end
 
 ---@class Expr.Call : Expr
----@field public callee Expr
 ---@field public paren Token
+---@field public callee Expr
 ---@field public arguments Expr[]
 
-function node.Call(callee, paren, arguments)
+function node.Call(paren, callee, arguments)
 	return setmetatable({
 		type = 'Call',
-		callee = callee,
 		paren = paren,
+		callee = callee,
 		arguments = arguments,
 	}, {
 		__tostring = function(self)
 			local s = 'Call('
 
-			s = s .. tostring(self.callee) .. ', '
 			s = s .. tostring(self.paren) .. ', '
+			s = s .. tostring(self.callee) .. ', '
 			s = s .. '['
 			for i, v in ipairs(self.arguments) do
-				s = s .. v
+				s = s .. tostring(v)
 				if i ~= #self.arguments then s = s .. ', ' end
 			end
 			s = s .. ']'
@@ -289,20 +290,20 @@ function node.Call(callee, paren, arguments)
 end
 
 ---@class Expr.Get : Expr
----@field public object Expr
 ---@field public name Token
+---@field public object Expr
 
-function node.Get(object, name)
+function node.Get(name, object)
 	return setmetatable({
 		type = 'Get',
-		object = object,
 		name = name,
+		object = object,
 	}, {
 		__tostring = function(self)
 			local s = 'Get('
 
-			s = s .. tostring(self.object) .. ', '
-			s = s .. tostring(self.name)
+			s = s .. tostring(self.name) .. ', '
+			s = s .. tostring(self.object)
 
 			return s .. ')'
 		end,
@@ -346,22 +347,22 @@ function node.Literal(value)
 end
 
 ---@class Expr.Logical : Expr
----@field public left Expr
 ---@field public op Token
+---@field public left Expr
 ---@field public right Expr
 
-function node.Logical(left, op, right)
+function node.Logical(op, left, right)
 	return setmetatable({
 		type = 'Logical',
-		left = left,
 		op = op,
+		left = left,
 		right = right,
 	}, {
 		__tostring = function(self)
 			local s = 'Logical('
 
-			s = s .. tostring(self.left) .. ', '
 			s = s .. tostring(self.op) .. ', '
+			s = s .. tostring(self.left) .. ', '
 			s = s .. tostring(self.right)
 
 			return s .. ')'
@@ -370,23 +371,23 @@ function node.Logical(left, op, right)
 end
 
 ---@class Expr.Set : Expr
----@field public object Expr
 ---@field public name Token
 ---@field public value Expr
+---@field public object Expr
 
-function node.Set(object, name, value)
+function node.Set(name, value, object)
 	return setmetatable({
 		type = 'Set',
-		object = object,
 		name = name,
 		value = value,
+		object = object,
 	}, {
 		__tostring = function(self)
 			local s = 'Set('
 
-			s = s .. tostring(self.object) .. ', '
 			s = s .. tostring(self.name) .. ', '
-			s = s .. tostring(self.value)
+			s = s .. tostring(self.value) .. ', '
+			s = s .. tostring(self.object)
 
 			return s .. ')'
 		end,

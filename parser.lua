@@ -11,6 +11,7 @@ Parser.__index = Parser
 
 ---@param lexer Lexer
 ---@return Parser
+---@nodiscard
 function Parser.new(lexer)
 	local self = setmetatable({}, Parser)
 

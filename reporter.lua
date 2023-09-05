@@ -35,7 +35,7 @@ function reporter:error(msg, line1, col1, line2, col2, printLine)
 	line2 = line2 or line1
 	col2 = col2 or col1
 
-	io.write("fatal: ", msg, " [", line1, ", ", col1, "]\n")
+	io.write("error: ", msg, " [", line1, ", ", col1, "]\n")
 
 	if printLine then
 		io.write "|\n"

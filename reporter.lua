@@ -75,7 +75,7 @@ function reporter:getErrLocationStr(text, line1, col1, line2, col2)
 	local res = string.rep(" ", tabCount * self.spacesPerTab)
 	if line1 == line2 then
 		res = res .. string.rep(" ", col1 - 1 - tabCount)
-		res = res .. string.rep("^", col2 - col1 + 1)
+		res = res .. string.rep("^", math.min(1, col2 - col1))
 	else
 		res = res .. string.rep("^", #text - tabCount)
 	end

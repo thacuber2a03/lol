@@ -47,10 +47,19 @@ do --- source read
 	reporter:setSource(source)
 end
 
+local start = os.clock()
 local lexer = Lexer(source)
 local parser = Parser(lexer)
 local ast = parser:parse()
+
+if reporter.didError then
+	os.exit(-1)
+end
+
 local compiler = Compiler(ast, args.spaces)
+
+local finish = os.clock()
+io.write("successfully finished compilation in ", (finish - start) * 1000, " milliseconds")
 
 do -- source output
 	local file <close>, err = io.open(args.output, "w+b")

@@ -115,12 +115,12 @@ end
 ---@field public elseBranch Stmt
 ---@field public thenBranch Stmt
 
-function node.If(condition, elseBranch, thenBranch)
+function node.If(condition, thenBranch, elseBranch)
 	return setmetatable({
 		type = 'If',
 		condition = condition,
-		elseBranch = elseBranch,
 		thenBranch = thenBranch,
+		elseBranch = elseBranch,
 	}, {
 		__tostring = function(self)
 			local s = 'If('

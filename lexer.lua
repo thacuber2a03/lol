@@ -36,7 +36,7 @@ function Lexer.new(source)
 	self.saved = nil
 
 	self.line1 = 1
-	self.col1 = 0
+	self.col1 = 1
 	self.line2 = self.line1
 	self.col2 = self.col1
 
@@ -154,6 +154,7 @@ end
 ---@nodiscard
 ---@return Token
 function Lexer:identifier()
+	---@type string?
 	local id = ""
 	while self.curChar and self.curChar:match "%w" do
 		id = id .. self:advance(true)

@@ -4,8 +4,7 @@ Token.__index = Token
 ---@class Token
 ---@field public type Token.Type
 ---@field public value any
----@field public line integer
----@field public col integer
+---@field public pos Position
 
 ---@enum Token.Type
 Token.Type = {

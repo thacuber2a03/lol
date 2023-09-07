@@ -40,11 +40,10 @@ function reporter:error(msg, line1, col1, line2, col2, printLine)
 	if printLine then
 		io.write "|\n"
 		local text = self:getTextBetweenLines(line1, line2)
-		text = text:gsub("\t", string.rep(" ", self.spacesPerTab))
-		for _, l in ipairs(split(text, "\n")) do
-			io.write("|\t", l, "\n")
-		end
-		io.write("|\t", self:getErrLocationStr(text, line1, col1, line2, col2), "\n")
+		local errLocStr = self:getErrLocationStr(text, line1, col1, line2, col2)
+		text = text:gsub("\t", string.rep("-", self.spacesPerTab-1)..">")
+		for _, l in ipairs(split(text, "\n")) do io.write("|\t", l, "\n") end
+		io.write("|\t", errLocStr, "\n")
 	end
 
 	return self.didError

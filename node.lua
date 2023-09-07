@@ -14,12 +14,12 @@ function node.Block(statements)
 		__tostring = function(self)
 			local s = 'Block('
 
-			s = s .. '['
+			s = s .. '{'
 			for i, v in ipairs(self.statements) do
 				s = s .. tostring(v)
 				if i ~= #self.statements then s = s .. ', ' end
 			end
-			s = s .. ']'
+			s = s .. '}'
 
 			return s .. ')'
 		end,
@@ -27,29 +27,28 @@ function node.Block(statements)
 end
 
 ---@class Stmt.Class : Stmt
----@field public methods Stmt.Function[]
----@field public superclass Expr.Var
 ---@field public name Token
+---@field public superclass Expr.Var
+---@field public methods Stmt.Function[]
 
-function node.Class(methods, superclass, name)
+function node.Class(name, superclass, methods)
 	return setmetatable({
 		type = 'Class',
-		methods = methods,
-		superclass = superclass,
 		name = name,
+		superclass = superclass,
+		methods = methods,
 	}, {
 		__tostring = function(self)
 			local s = 'Class('
 
-			s = s .. '['
+			s = s .. tostring(self.name) .. ', '
+			s = s .. tostring(self.superclass) .. ', '
+			s = s .. '{'
 			for i, v in ipairs(self.methods) do
 				s = s .. tostring(v)
 				if i ~= #self.methods then s = s .. ', ' end
 			end
-			s = s .. '], '
-
-			s = s .. tostring(self.superclass) .. ', '
-			s = s .. tostring(self.name)
+			s = s .. '}'
 
 			return s .. ')'
 		end,
@@ -75,35 +74,34 @@ function node.Expression(expression)
 end
 
 ---@class Stmt.Function : Stmt
----@field public body Stmt[]
----@field public params Token[]
 ---@field public name Token
+---@field public params Token[]
+---@field public body Stmt[]
 
-function node.Function(body, params, name)
+function node.Function(name, params, body)
 	return setmetatable({
 		type = 'Function',
-		body = body,
-		params = params,
 		name = name,
+		params = params,
+		body = body,
 	}, {
 		__tostring = function(self)
 			local s = 'Function('
 
-			s = s .. '['
-			for i, v in ipairs(self.body) do
-				s = s .. tostring(v)
-				if i ~= #self.body then s = s .. ', ' end
-			end
-			s = s .. '], '
-
-			s = s .. '['
+			s = s .. tostring(self.name) .. ', '
+			s = s .. '{'
 			for i, v in ipairs(self.params) do
 				s = s .. tostring(v)
 				if i ~= #self.params then s = s .. ', ' end
 			end
-			s = s .. '], '
+			s = s .. '}, '
 
-			s = s .. tostring(self.name)
+			s = s .. '{'
+			for i, v in ipairs(self.body) do
+				s = s .. tostring(v)
+				if i ~= #self.body then s = s .. ', ' end
+			end
+			s = s .. '}'
 
 			return s .. ')'
 		end,
@@ -112,8 +110,8 @@ end
 
 ---@class Stmt.If : Stmt
 ---@field public condition Expr
----@field public elseBranch Stmt
 ---@field public thenBranch Stmt
+---@field public elseBranch Stmt
 
 function node.If(condition, thenBranch, elseBranch)
 	return setmetatable({
@@ -126,8 +124,8 @@ function node.If(condition, thenBranch, elseBranch)
 			local s = 'If('
 
 			s = s .. tostring(self.condition) .. ', '
-			s = s .. tostring(self.elseBranch) .. ', '
-			s = s .. tostring(self.thenBranch)
+			s = s .. tostring(self.thenBranch) .. ', '
+			s = s .. tostring(self.elseBranch)
 
 			return s .. ')'
 		end,
@@ -153,20 +151,20 @@ function node.Print(expression)
 end
 
 ---@class Stmt.Return : Stmt
----@field public value Expr
 ---@field public keyword Token
+---@field public value Expr
 
-function node.Return(value, keyword)
+function node.Return(keyword, value)
 	return setmetatable({
 		type = 'Return',
-		value = value,
 		keyword = keyword,
+		value = value,
 	}, {
 		__tostring = function(self)
 			local s = 'Return('
 
-			s = s .. tostring(self.value) .. ', '
-			s = s .. tostring(self.keyword)
+			s = s .. tostring(self.keyword) .. ', '
+			s = s .. tostring(self.value)
 
 			return s .. ')'
 		end,
@@ -174,20 +172,20 @@ function node.Return(value, keyword)
 end
 
 ---@class Stmt.Variable : Stmt
----@field public initializer Expr
 ---@field public name Token
+---@field public initializer Expr
 
-function node.Variable(initializer, name)
+function node.Variable(name, initializer)
 	return setmetatable({
 		type = 'Variable',
-		initializer = initializer,
 		name = name,
+		initializer = initializer,
 	}, {
 		__tostring = function(self)
 			local s = 'Variable('
 
-			s = s .. tostring(self.initializer) .. ', '
-			s = s .. tostring(self.name)
+			s = s .. tostring(self.name) .. ', '
+			s = s .. tostring(self.initializer)
 
 			return s .. ')'
 		end,
@@ -195,20 +193,47 @@ function node.Variable(initializer, name)
 end
 
 ---@class Stmt.While : Stmt
----@field public body Stmt
 ---@field public condition Expr
+---@field public body Stmt
 
-function node.While(body, condition)
+function node.While(condition, body)
 	return setmetatable({
 		type = 'While',
-		body = body,
 		condition = condition,
+		body = body,
 	}, {
 		__tostring = function(self)
 			local s = 'While('
 
-			s = s .. tostring(self.body) .. ', '
-			s = s .. tostring(self.condition)
+			s = s .. tostring(self.condition) .. ', '
+			s = s .. tostring(self.body)
+
+			return s .. ')'
+		end,
+	})
+end
+
+---@class Stmt.For : Stmt
+---@field public initializer Stmt
+---@field public condition Expr
+---@field public step Stmt
+---@field public body Stmt
+
+function node.For(initializer, condition, step, body)
+	return setmetatable({
+		type = 'For',
+		initializer = initializer,
+		condition = condition,
+		step = step,
+		body = body,
+	}, {
+		__tostring = function(self)
+			local s = 'For('
+
+			s = s .. tostring(self.initializer) .. ', '
+			s = s .. tostring(self.condition) .. ', '
+			s = s .. tostring(self.step) .. ', '
+			s = s .. tostring(self.body)
 
 			return s .. ')'
 		end,
@@ -216,20 +241,20 @@ function node.While(body, condition)
 end
 
 ---@class Expr.Assign : Expr
----@field public value Expr
 ---@field public name Token
+---@field public value Expr
 
-function node.Assign(value, name)
+function node.Assign(name, value)
 	return setmetatable({
 		type = 'Assign',
-		value = value,
 		name = name,
+		value = value,
 	}, {
 		__tostring = function(self)
 			local s = 'Assign('
 
-			s = s .. tostring(self.value) .. ', '
-			s = s .. tostring(self.name)
+			s = s .. tostring(self.name) .. ', '
+			s = s .. tostring(self.value)
 
 			return s .. ')'
 		end,
@@ -237,22 +262,22 @@ function node.Assign(value, name)
 end
 
 ---@class Expr.Binary : Expr
----@field public op Token
 ---@field public left Expr
+---@field public op Token
 ---@field public right Expr
 
-function node.Binary(op, left, right)
+function node.Binary(left, op, right)
 	return setmetatable({
 		type = 'Binary',
-		op = op,
 		left = left,
+		op = op,
 		right = right,
 	}, {
 		__tostring = function(self)
 			local s = 'Binary('
 
-			s = s .. tostring(self.op) .. ', '
 			s = s .. tostring(self.left) .. ', '
+			s = s .. tostring(self.op) .. ', '
 			s = s .. tostring(self.right)
 
 			return s .. ')'
@@ -261,28 +286,28 @@ function node.Binary(op, left, right)
 end
 
 ---@class Expr.Call : Expr
----@field public paren Token
 ---@field public callee Expr
+---@field public paren Token
 ---@field public arguments Expr[]
 
-function node.Call(paren, callee, arguments)
+function node.Call(callee, paren, arguments)
 	return setmetatable({
 		type = 'Call',
-		paren = paren,
 		callee = callee,
+		paren = paren,
 		arguments = arguments,
 	}, {
 		__tostring = function(self)
 			local s = 'Call('
 
-			s = s .. tostring(self.paren) .. ', '
 			s = s .. tostring(self.callee) .. ', '
-			s = s .. '['
+			s = s .. tostring(self.paren) .. ', '
+			s = s .. '{'
 			for i, v in ipairs(self.arguments) do
 				s = s .. tostring(v)
 				if i ~= #self.arguments then s = s .. ', ' end
 			end
-			s = s .. ']'
+			s = s .. '}'
 
 			return s .. ')'
 		end,
@@ -290,20 +315,20 @@ function node.Call(paren, callee, arguments)
 end
 
 ---@class Expr.Get : Expr
----@field public name Token
 ---@field public object Expr
+---@field public name Token
 
-function node.Get(name, object)
+function node.Get(object, name)
 	return setmetatable({
 		type = 'Get',
-		name = name,
 		object = object,
+		name = name,
 	}, {
 		__tostring = function(self)
 			local s = 'Get('
 
-			s = s .. tostring(self.name) .. ', '
-			s = s .. tostring(self.object)
+			s = s .. tostring(self.object) .. ', '
+			s = s .. tostring(self.name)
 
 			return s .. ')'
 		end,
@@ -311,17 +336,13 @@ function node.Get(name, object)
 end
 
 ---@class Expr.Grouping : Expr
----@field public expression Expr
 
-function node.Grouping(expression)
+function node.Grouping()
 	return setmetatable({
 		type = 'Grouping',
-		expression = expression,
 	}, {
 		__tostring = function(self)
-			local s = 'Grouping('
-
-			s = s .. tostring(self.expression)
+			local s = 'Grouping'
 
 			return s .. ')'
 		end,
@@ -347,22 +368,22 @@ function node.Literal(value)
 end
 
 ---@class Expr.Logical : Expr
----@field public op Token
 ---@field public left Expr
+---@field public op Token
 ---@field public right Expr
 
-function node.Logical(op, left, right)
+function node.Logical(left, op, right)
 	return setmetatable({
 		type = 'Logical',
-		op = op,
 		left = left,
+		op = op,
 		right = right,
 	}, {
 		__tostring = function(self)
 			local s = 'Logical('
 
-			s = s .. tostring(self.op) .. ', '
 			s = s .. tostring(self.left) .. ', '
+			s = s .. tostring(self.op) .. ', '
 			s = s .. tostring(self.right)
 
 			return s .. ')'
@@ -371,23 +392,23 @@ function node.Logical(op, left, right)
 end
 
 ---@class Expr.Set : Expr
+---@field public object Expr
 ---@field public name Token
 ---@field public value Expr
----@field public object Expr
 
-function node.Set(name, value, object)
+function node.Set(object, name, value)
 	return setmetatable({
 		type = 'Set',
+		object = object,
 		name = name,
 		value = value,
-		object = object,
 	}, {
 		__tostring = function(self)
 			local s = 'Set('
 
+			s = s .. tostring(self.object) .. ', '
 			s = s .. tostring(self.name) .. ', '
-			s = s .. tostring(self.value) .. ', '
-			s = s .. tostring(self.object)
+			s = s .. tostring(self.value)
 
 			return s .. ')'
 		end,
@@ -395,20 +416,20 @@ function node.Set(name, value, object)
 end
 
 ---@class Expr.Super : Expr
----@field public method Token
 ---@field public keyword Token
+---@field public method Token
 
-function node.Super(method, keyword)
+function node.Super(keyword, method)
 	return setmetatable({
 		type = 'Super',
-		method = method,
 		keyword = keyword,
+		method = method,
 	}, {
 		__tostring = function(self)
 			local s = 'Super('
 
-			s = s .. tostring(self.method) .. ', '
-			s = s .. tostring(self.keyword)
+			s = s .. tostring(self.keyword) .. ', '
+			s = s .. tostring(self.method)
 
 			return s .. ')'
 		end,

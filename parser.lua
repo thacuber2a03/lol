@@ -27,6 +27,7 @@ function Parser:error(msg, printLine)
 		pos.line2, pos.col2,
 		printLine
 	)
+	-- TODO(thacuber2a03): implement panic and sync
 	self:next()
 	return node.Error(
 		pos.line1, pos.col1,
@@ -45,12 +46,20 @@ function Parser:parse()
 end
 
 function Parser:declaration()
-	return self:statement()
+	if self:match(Type.FUN) then
+		return self:funDecl()
+	elseif self:match(Type.VAR) then
+		return self:varDecl()
+	else
+		return self:statement()
+	end
 end
 
 function Parser:statement()
 	if self:match(Type.LBRACE) then
 		return self:block()
+	elseif self:match(Type.FOR) then
+		return self:forStatement()
 	elseif self:match(Type.PRINT) then
 		return self:printStatement()
 	elseif self:match(Type.WHILE) then
@@ -59,10 +68,41 @@ function Parser:statement()
 		return self:ifStatement()
 	end
 
-	return self:expressionStatement()
+	return self:exprStatement()
 end
 
-function Parser:expressionStatement()
+function Parser:forStatement()
+	self:consume(Type.LPAREN, "expected '(' after 'for'")
+	
+	local initializer
+	if self:match(Type.VAR) then
+		initializer = self:varDecl()
+	elseif not self:match(Type.SEMICOLON) then
+		initializer = self:exprStatement()
+	end
+
+	local condition
+	if not self:match(Type.SEMICOLON) then
+		condition = self:expression()
+		self:consume(Type.SEMICOLON, "expected ';' after condition")
+	end
+
+	local step
+	if not self:match(Type.SEMICOLON) then
+		step = self:expression()
+	end
+
+	self:consume(Type.RPAREN, "expected ')' after for step")
+
+	-- there's a potential optimization I can do
+	-- in the compiler that requires a new node
+	return node.For(
+		initializer, condition,
+		step, self:statement()
+	)
+end
+
+function Parser:exprStatement()
 	local expr = self:expression()
 	self:consume(Type.SEMICOLON, "expected ';' after expression")
 	return node.Expression(expr)
@@ -96,6 +136,42 @@ function Parser:ifStatement()
 	return node.If(cond, thenBranch, elseBranch)
 end
 
+function Parser:funDecl()
+	local func = self:functionSig "function"
+	return node.Function(func.name, func.params, func.body)
+end
+
+function Parser:varDecl()
+	local name = self:consume(Type.IDENTIFIER, "expected identifier after 'var'")
+
+	local initializer
+	if self:match(Type.EQUAL) then
+		initializer = self:expression()
+	end
+	self:consume(Type.SEMICOLON, "expected ';' after variable declaration")
+	return node.Variable(name, initializer)
+end
+
+function Parser:functionSig(funcType)
+	local signature = {}
+	signature.name = self:consume(Type.IDENTIFIER, "expected "..funcType.." parameters")
+
+	self:consume(Type.LPAREN, "expected '(' after "..funcType.." name")
+	signature.params = { }
+	if not self:match(Type.RPAREN) then
+		table.insert(signature.params, self:consume(Type.IDENTIFIER, "expected identifier"))
+		while self:match(Type.COMMA) do
+			table.insert(signature.params, self:consume(Type.IDENTIFIER, "expected identifier after ','"))
+		end
+		self:consume(Type.RPAREN, "expected ')' after "..funcType.." parameters")
+	end
+	self:consume(Type.LBRACE, "expected '{' to start "..funcType.." body")
+
+	signature.body = self:block()
+
+	return signature
+end
+
 function Parser:block()
 	local declarations = {}
 	while not (self:isAtEnd() or self:match(Type.RBRACE)) do
@@ -111,7 +187,22 @@ end
 
 function Parser:assignment()
 	-- TODO(thacuber2a03): assignments
-	return self:logicOr()
+	local expr = self:logicOr()
+
+	if self:check(Type.EQUAL) then
+		local equals = self:next()
+		local value = self:assignment()
+
+		if expr.type == "Var" then
+			return node.Assign(expr.name, value)
+		elseif expr.type == "Get" then
+			return node.Set(expr.object, expr.name, value)
+		else
+			return self:error("invalid assignment target")
+		end
+	end
+
+	return expr
 end
 
 function Parser:binary(methodName, types, result)
@@ -153,27 +244,31 @@ function Parser:unary()
 end
 
 function Parser:call()
-	local name = self:primary()
+	local expr = self:primary()
 
 	while true do
 		if self:match(Type.DOT) then
-			local object = self:consume(Type.IDENTIFIER)
-			name = node.Get(name, object)
-		elseif self:match(Type.LPAREN) then
+			local name = self:consume(Type.IDENTIFIER)
+			expr = node.Get(expr, name)
+		elseif self:check(Type.LPAREN) then
+			local paren = self:next()
 			local args = {}
-			if not self:match(Type.RPAREN) then args = self:arguments() end
-			name = node.Call(name, args)
+			if not self:match(Type.RPAREN) then
+				args = self:arguments()
+				self:consume(Type.RPAREN, "expected ')' after arguments")
+			end
+			expr = node.Call(expr, paren, args)
 		else
 			break
 		end
 	end
 
-	return name
+	return expr
 end
 
 function Parser:arguments()
 	local arguments = { self:expression() }
-	while not self:match(Type.COMMA) do
+	while self:match(Type.COMMA) do
 		table.insert(arguments, self:expression())
 	end
 	return arguments
@@ -185,9 +280,12 @@ function Parser:primary()
 	or self:check(Type.NIL)
 	or self:check(Type.THIS)
 	or self:check(Type.NUMBER)
-	or self:check(Type.STRING)
-	or self:check(Type.IDENTIFIER) then
+	or self:check(Type.STRING) then
 		return node.Literal(self:next())
+	end
+
+	if self:check(Type.IDENTIFIER) then
+		return node.Var(self:next())
 	end
 
 	if self:match(Type.LPAREN) then
@@ -224,7 +322,7 @@ end
 
 function Parser:consume(type, err)
 	if self:check(type) then
-		self:next()
+		return self:next()
 	else
 		self:error(err)
 	end

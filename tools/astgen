@@ -19,15 +19,16 @@ local function generateToString(outputFile, nodeSpec)
 	if next(nodeSpec.fields) then
 
 		local lastWasList
-		for name, type in pairs(nodeSpec.fields) do
-			lastWasList = type:match "%[%]"
+		for _, field in ipairs(nodeSpec.fields) do
+			local name = field[1]
+			lastWasList = field[2]:match "%[%]"
 			if lastWasList then
-				wf "s = s .. '['"
+				wf "s = s .. '{'"
 				wf("for i, v in ipairs(self.%s) do", name)
 				wf "\ts = s .. tostring(v)"
 				wf("\tif i ~= #self.%s then s = s .. ', ' end", name)
 				wf "end"
-				wf "s = s .. '], '\n"
+				wf "s = s .. '}, '\n"
 			else
 				wf("s = s .. tostring(self.%s) .. ', '", name)
 			end
@@ -47,8 +48,8 @@ end
 ---@param subclass string
 local function defineDocs(outputFile, nodeSpec, subclass)
 	writeFile(outputFile, "---@class %s.%s : %s\n", subclass, nodeSpec.name, subclass)
-	for name, type in pairs(nodeSpec.fields) do
-		writeFile(outputFile, "---@field public %s %s\n", name, type)
+	for _, field in ipairs(nodeSpec.fields) do
+		writeFile(outputFile, "---@field public %s %s\n", field[1], field[2])
 	end
 	outputFile:write "\n"
 end
@@ -58,16 +59,15 @@ end
 local function defineFunc(outputFile, nodeSpec)
 	writeFile(outputFile, "function node.%s(", nodeSpec.name)
 	local s = ""
-	for name in pairs(nodeSpec.fields) do
-		s = s .. name .. ", "
-	end
+	for _, field in ipairs(nodeSpec.fields) do s = s .. field[1] .. ", " end
 	outputFile:write(s:sub(1, -3))
 	outputFile:write ")\n"
 
 	outputFile:write "\treturn setmetatable({\n"
 	writeFile(outputFile, "\t\ttype = '%s',\n", nodeSpec.name)
 
-	for name in pairs(nodeSpec.fields) do
+	for _, field in ipairs(nodeSpec.fields) do
+		local name = field[1]
 		writeFile(outputFile, "\t\t%s = %s,\n", name, name)
 	end
 
@@ -111,31 +111,31 @@ defineNodes {
 		{
 			name = "Assign",
 			fields = {
-				name  = "Token",
-				value = "Expr",
+				{ "name", "Token" },
+				{ "value", "Expr" },
 			},
 		},
 		{
 			name = "Binary",
 			fields = {
-				left  = "Expr",
-				op    = "Token",
-				right = "Expr",
+				{ "left", "Expr" },
+				{ "op", "Token" },
+				{ "right", "Expr" },
 			},
 		},
 		{
 			name = "Call",
 			fields = {
-				callee = "Expr",
-				paren = "Token",
-				arguments = "Expr[]",
+				{ "callee", "Expr" },
+				{ "paren", "Token" },
+				{ "arguments", "Expr[]" },
 			},
 		},
 		{
 			name = "Get",
 			fields = {
-				object = "Expr",
-				name = "Token",
+				{ "object", "Expr" },
+				{ "name", "Token" },
 			},
 		},
 		{
@@ -144,45 +144,51 @@ defineNodes {
 		},
 		{
 			name = "Literal",
-			fields = { value = "any" },
+			fields = {
+				{ "value", "any" },
+			},
 		},
 		{
 			name = "Logical",
 			fields = {
-				left  = "Expr",
-				op    = "Token",
-				right = "Expr",
+				{ "left", "Expr" },
+				{ "op", "Token" },
+				{ "right", "Expr" },
 			},
 		},
 		{
 			name = "Set",
 			fields = {
-				object = "Expr",
-				name = "Token",
-				value = "Expr",
+				{ "object", "Expr" },
+				{ "name", "Token" },
+				{ "value", "Expr" },
 			},
 		},
 		{
 			name = "Super",
 			fields = {
-				keyword = "Token",
-				method = "Token",
+				{ "keyword", "Token" },
+				{ "method", "Token" },
 			},
 		},
 		{
 			name = "This",
-			fields = { keyword = "Token" },
+			fields = {
+				{ "keyword", "Token" },
+			},
 		},
 		{
 			name = "Unary",
 			fields = {
-				operator = "Token",
-				right = "Expr",
+				{ "operator", "Token" },
+				{ "right", "Expr" },
 			},
 		},
 		{
 			name = "Var",
-			fields = { name = "Token" },
+			fields = {
+				{ "name", "Token" },
+			},
 		},
 		{
 			name = "Error",
@@ -194,59 +200,70 @@ defineNodes {
 	stmt = {
 		{
 			name = "Block",
-			fields = { statements = "Stmt[]" },
+			fields = { { "statements", "Stmt[]" } },
 		},
 		{
 			name = "Class",
 			fields = {
-				name = "Token",
-				superclass = "Expr.Var",
-				methods = "Stmt.Function[]",
+				{ "name", "Token" },
+				{ "superclass", "Expr.Var" },
+				{ "methods", "Stmt.Function[]" },
 			},
 		},
 		{
 			name = "Expression",
-			fields = { expression = "Expr" }
+			fields = { { "expression", "Expr" } }
 		},
 		{
 			name = "Function",
 			fields = {
-				name = "Token",
-				params = "Token[]",
-				body = "Stmt[]",
+				{ "name", "Token" },
+				{ "params", "Token[]" },
+				{ "body", "Stmt[]" },
 			},
 		},
 		{
 			name = "If",
 			fields = {
-				condition = "Expr",
-				thenBranch = "Stmt",
-				elseBranch = "Stmt",
+				{ "condition", "Expr" },
+				{ "thenBranch", "Stmt" },
+				{ "elseBranch", "Stmt" },
 			},
 		},
 		{
 			name = "Print",
-			fields = { expression = "Token" },
+			fields = {
+				{ "expression", "Token" },
+			},
 		},
 		{
 			name = "Return",
 			fields = {
-				keyword = "Token",
-				value = "Expr",
+				{ "keyword", "Token" },
+				{ "value", "Expr" },
 			},
 		},
 		{
 			name = "Variable",
 			fields = {
-				name = "Token",
-				initializer = "Expr",
+				{ "name", "Token" },
+				{ "initializer", "Expr" },
 			},
 		},
 		{
 			name = "While",
 			fields = {
-				condition = "Expr",
-				body = "Stmt",
+				{ "condition", "Expr" },
+				{ "body", "Stmt" },
+			},
+		},
+		{
+			name = "For",
+			fields = {
+				{ "initializer", "Stmt" },
+				{ "condition", "Expr" },
+				{ "step", "Stmt" },
+				{ "body", "Stmt" },
 			}
 		}
 	}

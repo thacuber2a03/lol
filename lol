@@ -51,14 +51,12 @@ local start = os.clock()
 local lexer = Lexer(source)
 local parser = Parser(lexer)
 local ast = parser:parse()
-
-if reporter.didError then
-	os.exit(-1)
-end
-
-local compiler = Compiler(ast, args.spaces)
-
+local compiler = Compiler(ast, not args.tabs and args.spaces or nil)
+local code = compiler:compile()
 local finish = os.clock()
+
+if reporter.didError then os.exit(-1) end
+
 io.write("successfully finished compilation in ", (finish - start) * 1000, " milliseconds")
 
 do -- source output
@@ -68,5 +66,5 @@ do -- source output
 		os.exit(-1)
 	end
 
-	file:write(compiler:compile())
+	file:write(code)
 end
